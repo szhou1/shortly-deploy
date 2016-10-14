@@ -14,11 +14,11 @@ userSchema.methods.comparePassword = function(attemptedPassword, dbPassword, cal
 };
 
 userSchema.methods.hashPassword = function (password, callback) {
-  console.log('hashPassword...');
+  // console.log('hashPassword...');
   var cipher = Promise.promisify(bcrypt.hash);
   return cipher(password, null, null).bind(this)
     .then(function(hash) {
-      console.log('hashPassword cb', hash);
+      // console.log('hashPassword cb', hash);
       callback(hash);
     });
 };
