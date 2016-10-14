@@ -98,13 +98,9 @@ describe('', function() {
           visits: 0
         });
 
-        link.shortenUrl(link.url, function(shortenedUri) {
-          link.code = shortenedUri;
-          link.save(function() {
-            done();
-          });
+        link.save(function() {
+          done();
         });
-
       });
 
       it('Returns the same shortened code if attempted to add the same URL twice', function(done) {
