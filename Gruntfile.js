@@ -2,27 +2,16 @@ module.exports = function(grunt) {
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
-
-    clean: {
-      options: {
-        'no-write': false
-      },
-      build: ['public/dist/*']
-    },
-
     concat: {
+
       options: {
         separator: ';'
       },
-      js: {
-        src: ['public/client/*.js'],
-        dest: 'public/dist/client.js'
-      },
-      jslib: {
-        src: ['public/lib/jquery.js', 'public/lib/underscore.js', 'public/lib/backbone.js', 'public/lib/handlebars.js'],
-        dest: 'public/dist/lib.js'
+      dist: {
+        src: ['public/client/**/*.js'],
+        dest: 'public/dist/<%= pkg.name %>.js'
       }
-    },
+          },
 
     mochaTest: {
       test: {
@@ -40,31 +29,40 @@ module.exports = function(grunt) {
     },
 
     uglify: {
-      js: {
-        src: ['public/dist/client.js'],
-        dest: 'public/dist/client.min.js'
+
+      options: {
+        banner: '/*! <%= pkg.name %> <%= grunt.template.today("dd-mm-yyyy") %> */\n'
       },
-      jslib: {
-        src: ['public/dist/lib.js'],
-        dest: 'public/dist/lib.min.js'
+      dist: {
+        files: {
+          'public/dist/<%= pkg.name %>.min.js': ['<%= concat.dist.dest %>']
+        }
       }
-    },
+          },
 
     eslint: {
-      target: ['public/**/*.js']
+      target: [
+
+        'Gruntfile.js',
+        'app/**/*.js',
+        'public/**/*.js',
+        'lib/**/*.js',
+        './*.js',
+        'spec/**/*.js'
+              ]
     },
 
     cssmin: {
+
       options: {
-        shorthandCompacting: false,
-        roundingPrecision: -1
+        keepSpecialComments: 0
       },
-      target: {
+      dist: {
         files: {
-          'public/dist/minified.css': ['public/style.css']
+          'public/dist/style.min.css': 'public/style.css'
         }
       }
-    },
+          },
 
     watch: {
       scripts: {
@@ -72,7 +70,10 @@ module.exports = function(grunt) {
           'public/client/**/*.js',
           'public/lib/**/*.js',
         ],
-        tasks: ['clean', 'eslint', 'concat', 'uglify', 'cssmin']
+        tasks: [
+          'concat',
+          'uglify'
+        ]
       },
       css: {
         files: 'public/*.css',
@@ -82,17 +83,17 @@ module.exports = function(grunt) {
 
     shell: {
       prodServer: {
-      }
-    },
 
-    concurrent: {
-      dev: {
-        tasks: ['nodemon', 'watch']
-      }
-    }
+        command: 'git push live master',
+        options: {
+          stdout: true,
+          stderr: true,
+          failOnError: true
+        }
+              }
+    },
   });
 
-  grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
@@ -101,35 +102,43 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-mocha-test');
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-nodemon');
-  grunt.loadNpmTasks('grunt-concurrent');
 
-  grunt.registerTask('server-dev', ['concurrent']);
+  grunt.registerTask('server-dev', function (target) {
+    grunt.task.run([ 'nodemon', 'watch' ]);
+  });
 
   ////////////////////////////////////////////////////
   // Main grunt tasks
   ////////////////////////////////////////////////////
 
   grunt.registerTask('test', [
-    'mochaTest'
+
+    'eslint',
+        'mochaTest'
   ]);
 
-  grunt.registerTask('build', ['clean', 'eslint', 'concat', 'uglify', 'cssmin']);
+  grunt.registerTask('build', [
+
+    'concat',
+    'uglify',
+    'cssmin'
+      ]);
 
   grunt.registerTask('upload', function(n) {
-    console.log('upload');
     if (grunt.option('prod')) {
-      grunt.task.run(['deploy']);
-    } else {
+
+      grunt.task.run([ 'shell:prodServer' ]);
+          } else {
       grunt.task.run([ 'server-dev' ]);
     }
   });
 
-  grunt.registerTask('deploy', function(n) {
-    console.log('deploy task');
-    grunt.task.run(['test', 'build']);
-  });
+  grunt.registerTask('deploy', [
 
-  grunt.registerTask('default', ['concurrent']);
+    'test',
+    'build',
+    'upload'
+      ]);
 
 
 };
